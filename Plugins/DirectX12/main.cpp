@@ -30,28 +30,15 @@ HANDLE m_hFenceEvent;
 
 FLOAT m_clearColor[4] = { 0, 1.0f, 1.0f, 0 };
 
-VOID Resize(LONG width, LONG height);
 VOID SetResourceBarrier(ID3D12GraphicsCommandList* commandList, ID3D12Resource* resource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after);
 VOID WaitForCommandQueue(ID3D12CommandQueue* pCommandQueue);
 
-BOOL WINAPI ShowErrorMessage(UINT messageIcon, LPTSTR wndTitle, LRESULT result)
-{
-	TCHAR buffer[256];
-
-	wsprintf(buffer, TEXT("Error: 0x%08X"), result);
-	MessageBox(nullptr, buffer, wndTitle, messageIcon);
-
-	return FALSE;
-}
-
-BOOL WINAPI DllMain(_In_ HINSTANCE hinstDLL, _In_ DWORD fdwReason, _In_ LPVOID lpvReserved)
-{
+BOOL WINAPI DllMain(_In_ HINSTANCE hinstDLL, _In_ DWORD fdwReason, _In_ LPVOID lpvReserved) {
 	return TRUE;
 }
 
-TESTENV_API BOOL WINAPI Startup(HINSTANCE hInstance, HWND hWnd)
-{
-	HRESULT lastHR = CreateDXGIFactory2(NULL, IID_PPV_ARGS(m_dxgiFactory.ReleaseAndGetAddressOf()));
+TESTENV_API BOOL WINAPI Startup(HINSTANCE hInstance, HWND hWnd) {
+	HRESULT lastHR = CreateDXGIFactory2(NULL, IID_PPV_ARGS(m_dxgiFactory.GetAddressOf()));
 	if (FAILED(lastHR))
 		return ShowErrorMessage(MB_ICONERROR, TEXT("CreateDXGIFactory2"), lastHR);
 
@@ -138,13 +125,11 @@ TESTENV_API BOOL WINAPI Startup(HINSTANCE hInstance, HWND hWnd)
 	return TRUE;
 }
 
-TESTENV_API LPTSTR WINAPI GetName()
-{
+TESTENV_API LPTSTR WINAPI GetName() {
 	return TEXT("DirectX 12");
 }
 
-TESTENV_API BOOL WINAPI Render()
-{
+TESTENV_API BOOL WINAPI Render() {
 	static int count = 0;
 	int targetIndex = m_swapChain->GetCurrentBackBufferIndex();
 
@@ -169,15 +154,7 @@ TESTENV_API BOOL WINAPI Render()
 	return TRUE;
 }
 
-TESTENV_API VOID WINAPI MsgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	switch (uMsg)
-	{
-	case WM_SIZE:
-		if (wParam == SIZE_RESTORED || wParam == SIZE_MAXIMIZED)
-			Resize(LOWORD(lParam), HIWORD(lParam));
-		break;
-	}
+TESTENV_API VOID WINAPI MsgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 }
 
 TESTENV_API VOID WINAPI Shutdown()
@@ -186,8 +163,7 @@ TESTENV_API VOID WINAPI Shutdown()
 	m_hFenceEvent = nullptr;
 }
 
-VOID SetResourceBarrier(ID3D12GraphicsCommandList* commandList, ID3D12Resource* resource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after)
-{
+VOID SetResourceBarrier(ID3D12GraphicsCommandList* commandList, ID3D12Resource* resource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after) {
 	D3D12_RESOURCE_BARRIER descBarrier;
 	ZeroMemory(&descBarrier, sizeof(descBarrier));
 	descBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -198,8 +174,7 @@ VOID SetResourceBarrier(ID3D12GraphicsCommandList* commandList, ID3D12Resource* 
 	commandList->ResourceBarrier(1, &descBarrier);
 }
 
-VOID WaitForCommandQueue(ID3D12CommandQueue* pCommandQueue)
-{
+VOID WaitForCommandQueue(ID3D12CommandQueue* pCommandQueue) {
 	static UINT64 frames = 0;
 	m_queueFence->SetEventOnCompletion(frames, m_hFenceEvent);
 	pCommandQueue->Signal(m_queueFence.Get(), frames);
@@ -207,8 +182,7 @@ VOID WaitForCommandQueue(ID3D12CommandQueue* pCommandQueue)
 	frames++;
 }
 
-VOID Resize(LONG width, LONG height)
-{
+TESTENV_API VOID WINAPI Resize(LONG width, LONG height) {
 	m_viewport.Width = (FLOAT)width;
 	m_viewport.Height = (FLOAT)height;
 }

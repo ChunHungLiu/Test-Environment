@@ -41,5 +41,3 @@
 // STL for plugins
 #include <vector>
 #include <unordered_map>
-
-float RandomFloat(float a, float b);

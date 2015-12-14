@@ -16,25 +16,11 @@ HDC	m_hDC;
 HGLRC m_hRC;
 GLuint m_PixelFormat;
 
-VOID Resize(LONG width, LONG height);
-
-BOOL WINAPI ShowErrorMessage(UINT messageIcon, LPTSTR wndTitle, LRESULT result)
-{
-	TCHAR buffer[256];
-
-	wsprintf(buffer, TEXT("Error: 0x%08X"), result);
-	MessageBox(nullptr, buffer, wndTitle, messageIcon);
-
-	return FALSE;
-}
-
-BOOL WINAPI DllMain(_In_ HINSTANCE hinstDLL, _In_ DWORD fdwReason, _In_ LPVOID lpvReserved)
-{
+BOOL WINAPI DllMain(_In_ HINSTANCE hinstDLL, _In_ DWORD fdwReason, _In_ LPVOID lpvReserved) {
 	return TRUE;
 }
 
-TESTENV_API BOOL WINAPI Startup(HINSTANCE hInstance, HWND hWnd)
-{
+TESTENV_API BOOL WINAPI Startup(HINSTANCE hInstance, HWND hWnd) {
 	m_hWnd = hWnd;
 	m_hDC = GetDC(hWnd);
 	if (!m_hDC)
@@ -94,23 +80,19 @@ TESTENV_API BOOL WINAPI Startup(HINSTANCE hInstance, HWND hWnd)
 	return TRUE;
 }
 
-TESTENV_API LPTSTR WINAPI GetName()
-{
+TESTENV_API LPTSTR WINAPI GetName() {
 	return TEXT("OpenGL");
 }
 
-TESTENV_API VOID WINAPI MsgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	switch (uMsg)
-	{
-	case WM_SIZE:
-		Resize(LOWORD(lParam), HIWORD(lParam));
-		break;
+TESTENV_API VOID WINAPI MsgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	switch (uMsg) {
+		case WM_SIZE:
+			Resize(LOWORD(lParam), HIWORD(lParam));
+			break;
 	}
 }
 
-TESTENV_API BOOL WINAPI Render()
-{
+TESTENV_API BOOL WINAPI Render() {
 	glClearColor(0, 0, 1, 0);
 	glClearDepth(1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	// Clear Screen And Depth Buffer
@@ -119,23 +101,20 @@ TESTENV_API BOOL WINAPI Render()
 	return SwapBuffers(m_hDC);
 }
 
-TESTENV_API VOID WINAPI Shutdown()
-{
-	if (m_hRC)
-	{
+TESTENV_API VOID WINAPI Shutdown() {
+	if (m_hRC) {
 		wglMakeCurrent(NULL, NULL);
 		wglDeleteContext(m_hRC);
 	}
 
 	if (m_hDC)
 		ReleaseDC(m_hWnd, m_hDC);
-	
+
 	m_hRC = nullptr;
 	m_hDC = nullptr;
 }
 
-VOID Resize(LONG width, LONG height)
-{
+TESTENV_API VOID WINAPI Resize(LONG width, LONG height) {
 	glViewport(0, 0, width, height);						// Reset The Current Viewport
 
 	glMatrixMode(GL_PROJECTION);						// Select The Projection Matrix

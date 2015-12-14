@@ -15,32 +15,18 @@ CComPtr<IDirect3DDevice9Ex> m_pDirect3DDevice9Ex;
 D3DPRESENT_PARAMETERS m_d3dpp;
 D3DCOLOR m_clearColor = D3DCOLOR_XRGB(0, 0, 255);
 
-VOID Resize(LONG width, LONG height);
-
-BOOL WINAPI ShowErrorMessage(UINT messageIcon, LPTSTR wndTitle, LRESULT result)
-{
-	TCHAR buffer[256];
-
-	wsprintf(buffer, TEXT("Error: 0x%08X"), result);
-	MessageBox(nullptr, buffer, wndTitle, messageIcon);
-
-	return FALSE;
-}
-
-BOOL WINAPI DllMain(_In_ HINSTANCE hinstDLL, _In_ DWORD fdwReason, _In_ LPVOID lpvReserved)
-{
+BOOL WINAPI DllMain(_In_ HINSTANCE hinstDLL, _In_ DWORD fdwReason, _In_ LPVOID lpvReserved) {
 	return TRUE;
 }
 
-TESTENV_API BOOL WINAPI Startup(HINSTANCE hInstance, HWND hWnd)
-{
+TESTENV_API BOOL WINAPI Startup(HINSTANCE hInstance, HWND hWnd) {
 	ZeroMemory(&m_d3dpp, sizeof(D3DPRESENT_PARAMETERS));
 
 	HRESULT lastHR = Direct3DCreate9Ex(D3D_SDK_VERSION, &m_pDirect3D9Ex);
 
 	if (FAILED(lastHR))
 		return ShowErrorMessage(MB_ICONERROR, TEXT("Direct3DCreate9Ex"), lastHR);
-		
+
 
 	D3DDISPLAYMODE d3ddm = { 0 };
 
@@ -60,8 +46,7 @@ TESTENV_API BOOL WINAPI Startup(HINSTANCE hInstance, HWND hWnd)
 		if (d3dcaps.DevCaps & D3DDEVCAPS_PUREDEVICE) {
 			behaviorFlags |= D3DCREATE_PUREDEVICE;
 		}
-	}
-	else {
+	} else {
 		behaviorFlags = D3DCREATE_SOFTWARE_VERTEXPROCESSING;
 	}
 
@@ -94,25 +79,31 @@ TESTENV_API BOOL WINAPI Startup(HINSTANCE hInstance, HWND hWnd)
 
 	if (FAILED(lastHR))
 		return ShowErrorMessage(MB_ICONERROR, TEXT("IDirect3DDevice9Ex - CreateDeviceEx"), lastHR);
-	
+
+	m_pDirect3DDevice9Ex->SetRenderState(D3DRS_LIGHTING, FALSE);    // turn off the 3D lighting
+	m_pDirect3DDevice9Ex->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);    // turn off culling
+	m_pDirect3DDevice9Ex->SetRenderState(D3DRS_ZENABLE, TRUE);    // turn on the z-buffer
+
 	return SUCCEEDED(lastHR);
 }
 
-TESTENV_API LPTSTR WINAPI GetName()
-{
+TESTENV_API LPTSTR WINAPI GetName() {
 	return TEXT("DirectX 9");
 }
 
-TESTENV_API BOOL WINAPI Render()
-{
+TESTENV_API BOOL WINAPI Render() {
 	HRESULT lastHR = m_pDirect3DDevice9Ex->Clear(NULL, nullptr, D3DCLEAR_TARGET, m_clearColor, 1.0f, NULL);
-
 	if (FAILED(lastHR))
-		return ShowErrorMessage(MB_ICONERROR, TEXT("IDirect3DDevice9Ex - Clear"), lastHR);
+		return ShowErrorMessage(MB_ICONERROR, TEXT("IDirect3DDevice9Ex - Clear - Target"), lastHR);
+
+	lastHR = m_pDirect3DDevice9Ex->Clear(0, NULL, D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
+	if (FAILED(lastHR))
+		return ShowErrorMessage(MB_ICONERROR, TEXT("IDirect3DDevice9Ex - Clear - ZBuffer"), lastHR);
 
 	lastHR = m_pDirect3DDevice9Ex->BeginScene();
 	if (FAILED(lastHR))
 		return ShowErrorMessage(MB_ICONERROR, TEXT("IDirect3DDevice9Ex - BeginScene"), lastHR);
+
 
 	lastHR = m_pDirect3DDevice9Ex->EndScene();
 	if (FAILED(lastHR))
@@ -125,25 +116,15 @@ TESTENV_API BOOL WINAPI Render()
 	return TRUE;
 }
 
-TESTENV_API VOID WINAPI MsgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	switch (uMsg)
-	{
-	case WM_SIZE:
-		if(wParam == SIZE_RESTORED || wParam == SIZE_MAXIMIZED)
-			Resize(LOWORD(lParam), HIWORD(lParam));
-		break;
-	}
+TESTENV_API VOID WINAPI MsgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 }
 
-TESTENV_API VOID WINAPI Shutdown()
-{
+TESTENV_API VOID WINAPI Shutdown() {
 	m_pDirect3DDevice9Ex.Release();
 	m_pDirect3D9Ex.Release();
 }
 
-VOID Resize(LONG width, LONG height)
-{
+TESTENV_API VOID WINAPI Resize(LONG width, LONG height) {
 	m_d3dpp.BackBufferWidth = width;
 	m_d3dpp.BackBufferHeight = height;
 

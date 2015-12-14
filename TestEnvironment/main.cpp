@@ -9,12 +9,16 @@
 
 #include "IPlugin.h"
 
+#ifdef _DEBUG
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+#endif
+
 #if defined(_UNICODE)
 using string = std::wstring;
-#define WinMain wWinMain
 #else
 using string = std::string;
-#define WinMain WinMain
 #endif
 
 static TCHAR g_szWindowClass[] = TEXT("UniSuite");
@@ -28,27 +32,22 @@ string GetExePath();
 
 #if defined(_WIN64)
 #define RenderPluginDLL "Render"
+#define ResizePluginDLL "Resize"
 #define GetNamePluginDLL "GetName"
 #define MsgProcPluginDLL "MsgProc"
 #define ShutdownPluginDLL "Shutdown"
 #define StartupPluginDLL "Startup"
 #elif defined(_WIN32)
 #define RenderPluginDLL "_Render@0"
+#define ResizePluginDLL "_Resize@8"
 #define GetNamePluginDLL "_GetName@0"
 #define MsgProcPluginDLL "_MsgProc@16"
 #define ShutdownPluginDLL "_Shutdown@0"
 #define StartupPluginDLL "_Startup@8"
 #endif
 
-using StartupPluginFn = BOOL(WINAPI*)(HINSTANCE, HWND);
-using RenderPluginFn = BOOL(WINAPI*)();
-using GetNamePluginFn = LPTSTR(WINAPI*)();
-using MsgProcPluginFn = VOID(WINAPI*)(HWND, UINT, WPARAM, LPARAM);
-using ShutdownPluginFn = VOID(WINAPI*)();
-
-struct IPlugin
-{
-	GetNamePluginFn name;
+struct IPlugin {
+	decltype(&GetName) name;
 	HMODULE module;
 	BOOL active;
 
@@ -59,25 +58,29 @@ struct IPlugin
 static std::vector<IPlugin> g_hPlugins;
 static IPlugin* g_hActivePlugin;
 
-StartupPluginFn StartupPlugin;
-RenderPluginFn RenderPlugin;
-MsgProcPluginFn MsgProcPlugin;
-ShutdownPluginFn ShutdownPlugin;
+decltype(&Startup) StartupPlugin;
+decltype(&Render) RenderPlugin;
+decltype(&MsgProc) MsgProcPlugin;
+decltype(&Shutdown) ShutdownPlugin;
+decltype(&Resize) ResizePlugin;
 
-INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PTSTR lpCmdLine, INT nCmdShow)
-{
+INT WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, INT nCmdShow) {
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+
 	auto listOfPlugins = GetFiles(GetExePath().c_str());
-	for (auto file : listOfPlugins)
-	{
+	for (auto file : listOfPlugins) {
 		auto module = LoadLibrary(file.c_str());
-		auto GetName = reinterpret_cast<GetNamePluginFn>(GetProcAddress(module, GetNamePluginDLL));
-		if (GetName)
-			g_hPlugins.push_back({ GetName, module, FALSE });
+		auto GetNamePlugin = reinterpret_cast<decltype(&GetName)>(GetProcAddress(module, GetNamePluginDLL));
+		if (GetNamePlugin)
+			g_hPlugins.push_back({ GetNamePlugin, module, FALSE });
 		else
 			FreeLibrary(module);
 	}
 
 	DialogBox(hInstance, MAKEINTRESOURCE(IDD_SELECTENGINE), NULL, DlgProc);
+
+	if (g_hActivePlugin == nullptr)
+		return 0x0;
 
 	WNDCLASSEX wcex;
 	wcex.cbSize = sizeof(WNDCLASSEX);
@@ -88,7 +91,8 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PTSTR lpCmdLine
 	wcex.hInstance = hInstance;
 	wcex.hIcon = LoadIcon(hInstance, IDI_APPLICATION);
 	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOWFRAME);
+	//wcex.hbrBackground = (HBRUSH)(COLOR_WINDOWFRAME);
+	wcex.hbrBackground = nullptr;
 	wcex.lpszMenuName = nullptr;
 	wcex.lpszClassName = g_szWindowClass;
 	wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
@@ -96,10 +100,11 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PTSTR lpCmdLine
 	if (!RegisterClassEx(&wcex))
 		return 0x1;
 
-	StartupPlugin = reinterpret_cast<StartupPluginFn>(GetProcAddress(g_hActivePlugin->module, StartupPluginDLL));
-	RenderPlugin = reinterpret_cast<RenderPluginFn>(GetProcAddress(g_hActivePlugin->module, RenderPluginDLL));
-	MsgProcPlugin = reinterpret_cast<MsgProcPluginFn>(GetProcAddress(g_hActivePlugin->module, MsgProcPluginDLL));
-	ShutdownPlugin = reinterpret_cast<ShutdownPluginFn>(GetProcAddress(g_hActivePlugin->module, ShutdownPluginDLL));
+	StartupPlugin = reinterpret_cast<decltype(&Startup)>(GetProcAddress(g_hActivePlugin->module, StartupPluginDLL));
+	RenderPlugin = reinterpret_cast<decltype(&Render)>(GetProcAddress(g_hActivePlugin->module, RenderPluginDLL));
+	MsgProcPlugin = reinterpret_cast<decltype(&MsgProc)>(GetProcAddress(g_hActivePlugin->module, MsgProcPluginDLL));
+	ShutdownPlugin = reinterpret_cast<decltype(&Shutdown)>(GetProcAddress(g_hActivePlugin->module, ShutdownPluginDLL));
+	ResizePlugin = reinterpret_cast<decltype(&Resize)>(GetProcAddress(g_hActivePlugin->module, ResizePluginDLL));
 
 	auto hWnd = CreateWindow(g_szWindowClass, TEXT("Test Environment - Engine: Unknown - Made by TheAifam5"), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 640, 480, nullptr, nullptr, hInstance, nullptr);
 
@@ -113,7 +118,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PTSTR lpCmdLine
 	UpdateWindow(hWnd);
 
 	TCHAR buffer[256] = { 0 };
-	wsprintf(buffer, g_szWindowTitle, g_hActivePlugin->name());
+	_stprintf_s(buffer, g_szWindowTitle, g_hActivePlugin->name());
 
 	SetWindowText(hWnd, buffer);
 
@@ -121,10 +126,8 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PTSTR lpCmdLine
 
 	g_hActivePlugin->active = true;
 
-	for (;;)
-	{
-		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-		{
+	for (;;) {
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
 			if (msg.message == WM_QUIT)
 				break;
 
@@ -138,96 +141,89 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PTSTR lpCmdLine
 
 	ShutdownPlugin();
 
-	for(auto& plugins : g_hPlugins)
+	for (auto& plugins : g_hPlugins)
 		FreeLibrary(plugins.module);
 
 	DestroyWindow(hWnd);
 	UnregisterClass(g_szWindowClass, hInstance);
 
-	//Cleanup memory
-	hWnd = nullptr;
-	g_hActivePlugin = nullptr;
+	#ifdef _DEBUG
+	_CrtDumpMemoryLeaks();
+	#endif
 
-	return (INT)msg.wParam;
+	return static_cast<INT>(msg.wParam);
 }
 
-LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	if (g_hActivePlugin->active)
+LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+
+	if (g_hActivePlugin && g_hActivePlugin->active)
 		MsgProcPlugin(hWnd, uMsg, wParam, lParam);
 
-	switch (uMsg)
-	{
-	case WM_PAINT:
-		ValidateRect(hWnd, 0);
-		break;
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		break;
+	switch (uMsg) {
+		case WM_CLOSE:
+			DestroyWindow(hWnd);
+			break;
 
-	default:
-		return DefWindowProc(hWnd, uMsg, wParam, lParam);
+		case WM_DESTROY:
+			PostQuitMessage(0);
+			break;
+
+		case WM_SIZE:
+			if (wParam == SIZE_RESTORED || wParam == SIZE_MAXIMIZED)
+				ResizePlugin(LOWORD(lParam), HIWORD(lParam));
+			break;
+
+		default:
+			return DefWindowProc(hWnd, uMsg, wParam, lParam);
 	}
 
 	return 0;
 }
 
-INT_PTR CALLBACK DlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	switch(uMsg)
-	{
-	case WM_CLOSE:
-		exit(0);
-		break;
+INT_PTR CALLBACK DlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	switch (uMsg) {
 
-	case WM_INITDIALOG:
+		case WM_INITDIALOG:
 		{
 			auto hWndCombo = GetDlgItem(hWnd, IDC_COMBOENGINES);
 			for (auto custom : g_hPlugins)
 				SendMessage(hWndCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(custom.name()));
+			break;
 		}
-		return TRUE;
 
-	case WM_COMMAND:
-		switch (wParam)
-		{
-		case IDC_BUTTONACCEPT:
-			{
-				TCHAR szSelectedEngine[256] = { 0 };
-				GetDlgItemText(hWnd, IDC_COMBOENGINES, szSelectedEngine, 255);
 
-				for (auto& plugin : g_hPlugins)
+		case WM_COMMAND:
+			switch (wParam) {
+				case IDC_BUTTONACCEPT:
 				{
-					if (StrCmp(plugin.name(), szSelectedEngine) == 0)
-					{
-						g_hActivePlugin = &plugin;
-						break;
+					TCHAR szSelectedEngine[256] = { 0 };
+					GetDlgItemText(hWnd, IDC_COMBOENGINES, szSelectedEngine, 255);
+
+					for (auto& plugin : g_hPlugins) {
+						if (StrCmp(plugin.name(), szSelectedEngine) == 0) {
+							g_hActivePlugin = &plugin;
+							break;
+						}
 					}
+
+					EndDialog(hWnd, 0);
 				}
-
-				if (!g_hActivePlugin)
-					exit(0);
-
-				EndDialog(hWnd, 0);
+				return TRUE;
 			}
-			return TRUE;
-		}
-		break;
+			break;
 	}
 
 	return FALSE;
 }
 
-string GetExePath()
-{
+string GetExePath() {
 	TCHAR buffer[MAX_PATH];
 	GetModuleFileName(NULL, buffer, MAX_PATH);
 	string::size_type pos = string(buffer).find_last_of(TEXT("\\/"));
 	return string(buffer).substr(0, pos);
 }
 
-std::vector<string> GetFiles(LPCTSTR folder)
-{
+std::vector<string> GetFiles(LPCTSTR folder) {
 	std::vector<string> names;
 	TCHAR buffer[MAX_PATH];
 	wsprintf(buffer, TEXT("%s\\Plugins\\*.dll"), folder);

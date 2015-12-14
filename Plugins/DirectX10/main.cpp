@@ -18,20 +18,7 @@ DXGI_SWAP_CHAIN_DESC m_swapChainDesc;
 DXGI_MODE_DESC m_bufferDesc;
 FLOAT m_clearColor[4] = { 0.f, 0.f, 1.f, 1.f };
 
-VOID Resize(LONG width, LONG height);
-
-BOOL WINAPI ShowErrorMessage(UINT messageIcon, LPTSTR wndTitle, LRESULT result)
-{
-	TCHAR buffer[256];
-
-	wsprintf(buffer, TEXT("Error: 0x%08X"), result);
-	MessageBox(nullptr, buffer, wndTitle, messageIcon);
-
-	return FALSE;
-}
-
-TESTENV_API BOOL WINAPI Startup(HINSTANCE hInstance, HWND hWnd)
-{
+TESTENV_API BOOL WINAPI Startup(HINSTANCE hInstance, HWND hWnd) {
 	ZeroMemory(&m_swapChainDesc, sizeof(DXGI_SWAP_CHAIN_DESC));
 	ZeroMemory(&m_bufferDesc, sizeof(DXGI_MODE_DESC));
 
@@ -66,7 +53,7 @@ TESTENV_API BOOL WINAPI Startup(HINSTANCE hInstance, HWND hWnd)
 
 	lastHR = m_pDXGISwapChain->GetBuffer(0, __uuidof(ID3D10Texture2D), reinterpret_cast<void**>(&pBackBuffer));
 	if (FAILED(lastHR))
-		return ShowErrorMessage(MB_ICONERROR, TEXT("IDXGISwapChain - GetBuffer"),  lastHR);
+		return ShowErrorMessage(MB_ICONERROR, TEXT("IDXGISwapChain - GetBuffer"), lastHR);
 
 	lastHR = m_pD3D10Device->CreateRenderTargetView(pBackBuffer, NULL, &m_pD3D10RenderTargetView);
 	if (FAILED(lastHR))
@@ -83,13 +70,11 @@ TESTENV_API BOOL WINAPI Startup(HINSTANCE hInstance, HWND hWnd)
 	return TRUE;
 }
 
-TESTENV_API LPTSTR WINAPI GetName()
-{
+TESTENV_API LPTSTR WINAPI GetName() {
 	return TEXT("DirectX 10");
 }
 
-TESTENV_API BOOL WINAPI Render()
-{
+TESTENV_API BOOL WINAPI Render() {
 	m_pD3D10Device->ClearRenderTargetView(m_pD3D10RenderTargetView, m_clearColor);
 
 	HRESULT lastHR = m_pDXGISwapChain->Present(NULL, NULL);
@@ -99,19 +84,10 @@ TESTENV_API BOOL WINAPI Render()
 	return TRUE;
 }
 
-TESTENV_API VOID WINAPI MsgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	switch (uMsg)
-	{
-	case WM_SIZE:
-		if (wParam == SIZE_RESTORED || wParam == SIZE_MAXIMIZED)
-			Resize(LOWORD(lParam), HIWORD(lParam));
-		break;
-	}
+TESTENV_API VOID WINAPI MsgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 }
 
-TESTENV_API VOID WINAPI Shutdown()
-{
+TESTENV_API VOID WINAPI Shutdown() {
 	m_pD3D10RenderTargetView->Release();
 	m_pDXGISwapChain.Release();
 	m_pD3D10Device.Release();
@@ -119,8 +95,7 @@ TESTENV_API VOID WINAPI Shutdown()
 	m_pD3D10RenderTargetView = nullptr;
 }
 
-VOID Resize(LONG width, LONG height)
-{
+TESTENV_API VOID WINAPI Resize(LONG width, LONG height) {
 	m_pD3D10Device->OMSetRenderTargets(0, 0, 0);
 
 	m_pD3D10RenderTargetView->Release();
