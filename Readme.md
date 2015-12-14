@@ -1,6 +1,6 @@
 # Test Environment
-###### Support for: DirectX 9 - 11 & OpenGL
-### DirectX 12 not tested (sorry but i can't check)
+##### Support for: DirectX 9 - 11 & OpenGL
+###### DirectX 12 not tested (sorry but i can't check)
 
 # Screenshot
 ![alt text](http://i.imgur.com/UvhOZy2.png "Select engine window")
