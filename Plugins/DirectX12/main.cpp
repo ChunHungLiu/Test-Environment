@@ -28,7 +28,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE m_handleRTV[2];
 D3D12_VIEWPORT m_viewport;
 HANDLE m_hFenceEvent;
 
-FLOAT m_clearColor[4] = { 0, 1.0f, 1.0f, 0 };
+FLOAT m_clearColor[4] = { 0, 0, 1.f, 0 }; //RGBA
 
 VOID SetResourceBarrier(ID3D12GraphicsCommandList* commandList, ID3D12Resource* resource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after);
 VOID WaitForCommandQueue(ID3D12CommandQueue* pCommandQueue);
@@ -48,7 +48,7 @@ TESTENV_API BOOL WINAPI Startup(HINSTANCE hInstance, HWND hWnd) {
 	if (FAILED(lastHR))
 		return ShowErrorMessage(MB_ICONERROR, TEXT("DXGIAdapter - EnumAdapters"), lastHR);
 
-	lastHR = D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(m_dxDevice.GetAddressOf()));
+	lastHR = D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(m_dxDevice.GetAddressOf()));
 	if (FAILED(lastHR))
 		return ShowErrorMessage(MB_ICONERROR, TEXT("D3D12CreateDevice"), lastHR);
 

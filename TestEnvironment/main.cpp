@@ -65,7 +65,10 @@ decltype(&Shutdown) ShutdownPlugin;
 decltype(&Resize) ResizePlugin;
 
 INT WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, INT nCmdShow) {
+	#if _DEBUG
+	_CrtDumpMemoryLeaks();
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+	#endif
 
 	auto listOfPlugins = GetFiles(GetExePath().c_str());
 	for (auto file : listOfPlugins) {
@@ -141,15 +144,11 @@ INT WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdL
 
 	ShutdownPlugin();
 
-	for (auto& plugins : g_hPlugins)
-		FreeLibrary(plugins.module);
-
 	DestroyWindow(hWnd);
 	UnregisterClass(g_szWindowClass, hInstance);
 
-	#ifdef _DEBUG
-	_CrtDumpMemoryLeaks();
-	#endif
+	for (auto& plugins : g_hPlugins)
+		FreeLibrary(plugins.module);
 
 	return static_cast<INT>(msg.wParam);
 }
@@ -191,6 +190,9 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 			break;
 		}
 
+		case WM_CLOSE:
+			EndDialog(hWnd, 0);
+			break;
 
 		case WM_COMMAND:
 			switch (wParam) {
